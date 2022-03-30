@@ -9,7 +9,7 @@ import sqlalchemy
 import json
 import os
 
-# Metodo para la autenticacion de usuarios
+# autenticacion
 auth = HTTPBasicAuth()
 
 users = {
@@ -21,8 +21,7 @@ def verify_password(username, password):
     if username in users and check_password_hash(users.get(username), password):
         return username
 
-
-# Schemas de validacion
+# Esquemas de validacion
 class ArtistSchema(Schema):
     name = fields.Str(required=True)
     age = fields.Int(required=True)
