@@ -98,7 +98,8 @@ class SchemaCoordinates(Schema):
 
 # proceso para las coordenadas
 def locate_coordinates(latitude, longitude):
-    path_geojson = "/Users/bryanlonso/proyectos/django_project/src/static/peru_distritos.geojson"
+    root_path = os.getcwd()
+    path_geojson = os.path.join(root_path, "src/static/peru_distritos.geojson")
     if not os.path.isfile(path_geojson):
         return None
     with open(path_geojson) as read_geojson:
