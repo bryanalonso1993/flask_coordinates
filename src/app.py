@@ -1,12 +1,26 @@
-from crypt import methods
+from werkzeug.security import generate_password_hash, check_password_hash
 from marshmallow import Schema, fields, ValidationError
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from shapely.geometry import Point, shape
+from flask import Flask, request, jsonify
+from flask_httpauth import HTTPBasicAuth
+from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
 import sqlalchemy
 import json
 import os
+
+# Metodo para la autenticacion de usuarios
+auth = HTTPBasicAuth()
+
+users = {
+    'bryan': generate_password_hash('Prueba_Flask_4')
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+
 
 # Schemas de validacion
 class ArtistSchema(Schema):
@@ -46,6 +60,7 @@ db.create_all()
 
 # rutas
 @app.route("/createUser", methods=['POST'])
+@auth.login_required
 def create_user():
     data_values = request.json
     schema = SchemaUser()
@@ -62,6 +77,7 @@ def create_user():
         return jsonify({'error': err.__str__() }), 400
 
 @app.route("/createMultipleUser", methods=['POST'])
+@auth.login_required
 def create_multiple_users():
     data_values = request.json
     schema = SchemaUser(many=True)
@@ -102,6 +118,7 @@ def locate_coordinates(latitude, longitude):
     return response_value
 
 @app.route('/locate', methods=['POST'])
+@auth.login_required
 def coordinates():
     req = request.json
     schema = SchemaCoordinates()
@@ -116,6 +133,7 @@ def coordinates():
     return jsonify(response)
 
 @app.route('/locateMultipleCoordinates', methods=['POST'])
+@auth.login_required
 def locate_multiple_coordinates():
     req = request.json
     schema = SchemaCoordinates(many=True)
@@ -133,25 +151,25 @@ def locate_multiple_coordinates():
     return jsonify(data_values)
 
 @app.route("/task", methods=['POST'])
+@auth.login_required
 def create_task():
     response = request.json
     schema = ArtistSchema()
     try:
         result = schema.load(response)
-        print(result)
         return jsonify(response)
     except ValidationError as err:
-        print(err.messages)
         return jsonify(err.messages)
 
 @app.route("/user/<username>")
+@auth.login_required
 def show_user_profile(username):
     return f"User {escape(username)}"
 
 @app.route("/posts/<int:post_id>")
+@auth.login_required
 def show_post(post_id):
     return f"Post {escape(post_id)}"
 
-# instancia principal
 if __name__ == '__main__':
     app.run(debug=True, port=4040)
