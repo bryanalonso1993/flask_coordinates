@@ -1,12 +1,18 @@
 Prueba con Flask\
 Georreferenciación basada en geojson e inserción de registros en base de datos con autenticación básica.
 
-Endpoint de prueba:
+* Iniciar la aplicación:
+
+```
+    python3 src/app.py
+```
+
+* Endpoint de prueba:
 ```
     http://localhost:4040/
 ```
 
-Credenciales:
+* Credenciales:
 ```
     username: bryan, password: Prueba_Flask_4
 ```
