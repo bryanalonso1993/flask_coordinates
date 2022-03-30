@@ -3,7 +3,7 @@ Georreferenciación basada en geojson e inserción de registros en base de datos
 
 Endpoint de prueba:
 ```
-    http://localhost:4041/
+    http://localhost:4040/
 ```
 
 Credenciales:
