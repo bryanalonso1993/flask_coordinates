@@ -1,11 +1,15 @@
 from werkzeug.security import generate_password_hash, check_password_hash
+from elasticapm.contrib.flask import ElasticAPM
 from marshmallow import Schema, fields, ValidationError
 from shapely.geometry import Point, shape
 from flask import Flask, request, jsonify
 from flask_httpauth import HTTPBasicAuth
 from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
+import elasticapm
 import sqlalchemy
+import requests
+import time
 import json
 import os
 
@@ -37,6 +41,15 @@ app = Flask(__name__)
 # configuracion ORM
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://node:node@localhost:3306/flask'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# config para apm
+app.config['ELASTIC_APM'] = {
+    'SERVICE_NAME': 'geojson locate coordinates',
+    'SERVER_URL': 'http://127.0.0.1:8200',
+    'ENVIROMENT': 'production'
+}
+
+# instancia apm elasticsearch
+apm = ElasticAPM(app, logging=True)
 
 # instancia base de datos
 db = SQLAlchemy(app)
@@ -73,6 +86,7 @@ def create_user():
         db.session.commit()
         return jsonify({'success': 'Se inserto los registros'})
     except sqlalchemy.exc.IntegrityError as err:
+        app.logger.error('No se pudo hacer la insersión de registros {}'.format(err), exc_info=True)
         return jsonify({'error': err.__str__() }), 400
 
 @app.route("/createMultipleUser", methods=['POST'])
@@ -170,6 +184,39 @@ def show_user_profile(username):
 @auth.login_required
 def show_post(post_id):
     return f"Post {escape(post_id)}"
+
+# json place holder
+@app.route("/jsonplaceholder", methods=['POST'])
+@auth.login_required
+def get_data_api():
+    response = requests.get('https://jsonplaceholder.typicode.com/comments')
+    if response.status_code == 200:
+        return jsonify(list(response.json()))
+    else:
+        return jsonify({
+            'error': 'Error en la solicitud',
+            'status_code': requests.status_code
+        })
+
+# create transaction session
+def transaction_request():
+    sess = requests.Session()
+    sessions = ['https://www.elastic.co', 'https://benchmarks.elastic.co']
+    for endpoint in sessions:
+        resp = sess.get(endpoint)
+        time.sleep(1)
+
+@app.route("/createtransaction", methods=['POST'])
+@auth.login_required
+def create_transaction():
+    client = elasticapm.Client(service_name="geojson locate coordinates", server_url="http://127.0.0.1:8200")
+    elasticapm.instrument()
+    client.begin_transaction(transaction_type="script")
+    transaction_request()
+    client.end_transaction(name="elastic endpoint", result="success")
+    return jsonify({
+        'sucess': 'ok'
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=4040)

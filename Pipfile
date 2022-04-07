@@ -11,8 +11,14 @@ pymysql = "*"
 shapely = "*"
 ijson = "*"
 flask-httpauth = "*"
+elastic-apm = {extras = ["flask"], version = "*"}
+psutil = "*"
+requests = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.9"
+
+[scripts]
+start = "python src/app.py"
